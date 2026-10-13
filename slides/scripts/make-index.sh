@@ -42,19 +42,18 @@ jq -n --arg lab "$lab" --argjson decks "$decks" --argjson files "$files" \
   img.logo { height: 44px; display: block; margin-bottom: 1.5rem; }
   table { width: 100%; border-collapse: collapse; table-layout: fixed; }
   th, td { padding: .6rem .8rem; border-bottom: 1px solid #e5e7eb; text-align: left; }
-  th:nth-child(1) { width: 25%; }
-  th:nth-child(2) { width: 40%; }
-  th:nth-child(n+3), td:nth-child(n+3) { width: 11%; text-align: center; }
+  th:nth-child(1) { width: 52%; }
+  th:nth-child(n+2), td:nth-child(n+2) { width: 16%; text-align: center; }
   a { color: #2b6cb0; text-decoration: none; }
   a:hover { text-decoration: underline; }
 </style>
 <a href="https://infraguide.org"><img class="logo" src="assets/logo/logo.svg" alt="infraguide.org"></a>
 <h1>Ceph Lab Slides</h1>
 <table>
-  <thead><tr><th>Deck</th><th>What it covers</th><th>HTML</th><th>PDF</th><th>PPTX</th></tr></thead>
+  <thead><tr><th>Deck</th><th>HTML</th><th>PDF</th><th>PPTX</th></tr></thead>
   <tbody>
 HTML
-  jq -r '.decks[] | "    <tr><td>\(.title | gsub("&"; "&amp;") | gsub("<"; "&lt;"))</td><td>\(.covers | gsub("&"; "&amp;") | gsub("<"; "&lt;"))</td><td><a href=\"\(.html)\">View</a></td><td><a href=\"\(.pdf)\">Download</a></td><td><a href=\"\(.pptx)\">Download</a></td></tr>"' index.json
+  jq -r '.decks[] | "    <tr><td>\(.covers | gsub("&"; "&amp;") | gsub("<"; "&lt;"))</td><td><a href=\"\(.html)\">View</a></td><td><a href=\"\(.pdf)\">Download</a></td><td><a href=\"\(.pptx)\">Download</a></td></tr>"' index.json
   cat <<HTML
   </tbody>
 </table>
