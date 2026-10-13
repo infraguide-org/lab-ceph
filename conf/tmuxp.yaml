@@ -1,0 +1,28 @@
+---
+session_name: stack
+windows:
+  - window_name: ceph
+    layout: tiled
+    shell_command_before:
+      - cd ~/
+    panes:
+      - ssh -t cephmon01.strg.wrx.sckt.net sudo su -
+      - ssh -t cephmon02.strg.wrx.sckt.net sudo su -
+      - ssh -t cephmon03.strg.wrx.sckt.net sudo su -
+      - ssh -t cephosd01.strg.wrx.sckt.net sudo su -
+      - ssh -t cephosd02.strg.wrx.sckt.net sudo su -
+      - ssh -t cephosd03.strg.wrx.sckt.net sudo su -
+      - sudo su -
+      - sudo su -
+      - cd  ~/ceph
+  - window_name: infra
+    layout: tiled
+    shell_command_before:
+      - cd ~/
+    panes:
+      - ssh -t dns.wrx.sckt.net        sudo su -
+      - ssh -t proxy.wrx.sckt.net      sudo su -
+      - ssh -t recorder.wrx.sckt.net   sudo su -
+      - ssh -t registry.wrx.sckt.net   sudo su -
+      - ssh -t hypervisor.wrx.sckt.net
+      - ''
