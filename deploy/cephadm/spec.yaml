@@ -1,0 +1,166 @@
+---
+service_type: host
+hostname: deployment
+addr: 10.20.21.24
+labels:
+- _admin
+- _no_schedule
+---
+service_type: host
+hostname: cephmon01
+addr: 10.20.21.128
+labels:
+- _admin
+- mds
+- mgr
+- mon
+- nfs
+- rbd-mirror
+- rgw
+---
+service_type: host
+hostname: cephmon02
+addr: 10.20.21.129
+labels:
+- _admin
+- mds
+- mgr
+- mon
+- nfs
+- rbd-mirror
+- rgw
+---
+service_type: host
+hostname: cephmon03
+addr: 10.20.21.130
+labels:
+- _admin
+- mds
+- mgr
+- mon
+- nfs
+- rbd-mirror
+- rgw
+---
+service_type: host
+hostname: cephosd01
+addr: 10.20.21.144
+labels:
+- osd
+---
+service_type: host
+hostname: cephosd02
+addr: 10.20.21.145
+labels:
+- osd
+---
+service_type: host
+hostname: cephosd03
+addr: 10.20.21.146
+labels:
+- osd
+# ---
+# service_type: host
+# hostname: cephosd04
+# addr: 10.20.21.147
+# labels:
+# - osd
+---
+service_type: host
+hostname: cephgra01
+addr: 10.20.21.136
+labels:
+- monitoring
+---
+service_type: mds
+service_id: default
+placement: {label: mds}
+---
+service_type: mgr
+service_id: default
+placement: {label: mgr}
+---
+service_type: mon
+service_id: default
+placement: {label: mon}
+# ---
+# NOTE: nodes for nfs should have connectivity to both networks: public and cluster
+# service_type: nfs
+# service_id: default
+# placement: {label: nfs}
+---
+service_type: osd
+service_id: ssd
+placement: {label: osd}
+spec:
+  data_devices:
+    paths:
+      - /dev/disk/by-id/scsi-0QEMU_QEMU_HARDDISK_drive-scsi2
+      - /dev/disk/by-id/scsi-0QEMU_QEMU_HARDDISK_drive-scsi3
+      - /dev/disk/by-id/scsi-0QEMU_QEMU_HARDDISK_drive-scsi4
+crush_device_class: ssd
+---
+service_type: rbd-mirror
+service_id: default
+placement: {label: rbd-mirror}
+---
+service_type: rgw
+service_id: default
+placement: {label: rgw}
+networks: ["10.20.21.0/24"]
+spec:
+  rgw_frontend_port: 8080
+---
+service_type: ingress
+service_id: rgw.default
+placement: {label: rgw}
+networks: ["10.20.21.0/24"]
+spec:
+  backend_service: rgw.default
+  virtual_ips_list: ["10.20.21.135/24"]
+  # virtual_ip: ""
+  frontend_port: 80
+  monitor_port: 1967
+# ---
+# service_type: ingress
+# service_id: rgw.ssl
+# placement: {label: rgw}
+# networks: ["10.20.21.0/24"]
+# spec:
+#   backend_service: rgw.default
+#   virtual_ips_list: ["10.20.21.135/24"]
+#   # virtual_ip: ""
+#   frontend_port: 443
+#   monitor_port: 1967
+#   ssl_cert: |
+# $(cat ../ssl/server-crt.pem | awk '{print "    "$0}')
+# $(cat ../ssl/server-key.pem | awk '{print "    "$0}')
+---
+service_type: prometheus
+service_name: prometheus
+placement: {label: monitoring}
+networks:
+  - 10.20.21.0/24
+spec:
+  retention_time: "1y"
+  retention_size: "10GB"
+---
+service_type: node-exporter
+networks:
+  - 10.20.21.0/24
+spec:
+  port: 9100
+---
+service_type: alertmanager
+service_name: alertmanager
+placement: {label: monitoring}
+networks:
+  - 10.20.21.0/24
+---
+service_type: grafana
+service_name: grafana
+placement: {label: monitoring}
+networks:
+  - 10.20.21.0/24
+spec:
+  port: 3000
