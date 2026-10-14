@@ -6,7 +6,7 @@
 # (download page) into the built slides directory.
 # Usage: make-index.sh <lab> <src-dir> <dist-dir> [build-yml] [env-yaml]
 # The optional build.yml (status/build.yml) adds a Build section to index.html,
-# the optional env.yaml (conf/env.yaml) adds a Hosts section.
+# the optional env.yaml (conf/env.yaml) adds a Hosts section and a hosts object in index.json.
 set -euo pipefail
 
 lab=$1
@@ -32,8 +32,36 @@ done
 
 files=$(find . -type f ! -name 'index.*' | sed 's#^\./##' | sort | jq -R -s -c 'split("\n") | map(select(length > 0))')
 
-jq -n --arg lab "$lab" --argjson decks "$(jq -c 'sort_by(.order)' <<<"$decks")" --argjson files "$files" \
-  '{schema: 1, lab: $lab, decks: $decks, files: $files}' > index.json
+hosts=null
+if [ -n "$env" ]; then
+  hosts=$(python3 - "$env" <<'PY'
+import json, sys, yaml
+
+servers = yaml.safe_load(open(sys.argv[1]))["server_conf"]
+base = min((s["domain"] for s in servers), key=lambda d: (d.count("."), len(d)))
+
+def host(s):
+    return {
+        "name": s["hostname"],
+        "fqdn": f"{s['hostname']}.{s['domain']}",
+        "cpu": s["cpu"],
+        "ram_mb": s["ram"],
+        "disks": s.get("disks") or [],
+        "airgapped": s.get("airgapped", False),
+    }
+
+servers.sort(key=lambda s: s["id"])
+json.dump({
+    "base": base,
+    "infrastructure": [host(s) for s in servers if s["domain"] == base],
+    "lab": [host(s) for s in servers if s["domain"].endswith("." + base)],
+}, sys.stdout)
+PY
+)
+fi
+
+jq -n --arg lab "$lab" --argjson decks "$(jq -c 'sort_by(.order)' <<<"$decks")" --argjson files "$files" --argjson hosts "$hosts" \
+  '{schema: 1, lab: $lab, decks: $decks, files: $files} + (if $hosts then {hosts: $hosts} else {} end)' > index.json
 
 {
   cat <<HTML
@@ -76,37 +104,18 @@ HTML
 </table>
 HTML
   if [ -n "$env" ]; then
-    python3 - "$env" > hosts.json <<'PY'
-import json, sys, yaml
-
-servers = yaml.safe_load(open(sys.argv[1]))["server_conf"]
-base = min((s["domain"] for s in servers), key=lambda d: (d.count("."), len(d)))
-
-def disks(values):
-    runs = []
-    for v in values or []:
-        if runs and runs[-1][0] == v:
-            runs[-1][1] += 1
-        else:
-            runs.append([v, 1])
-    return " + ".join(f"{n}×{v}" if n > 1 else str(v) for v, n in runs) + " GB" if runs else "–"
-
-def host(s):
-    airgapped = {True: "yes", "soft": "soft"}.get(s.get("airgapped"), "–")
-    return {"name": s["hostname"], "cpu": s["cpu"], "ram": f"{round(s['ram'] / 1024)} GB", "disks": disks(s.get("disks")), "airgapped": airgapped}
-
-servers.sort(key=lambda s: s["id"])
-json.dump({
-    "base": base,
-    "infrastructure": [host(s) for s in servers if s["domain"] == base],
-    "lab": [host(s) for s in servers if s["domain"].endswith("." + base)],
-}, sys.stdout)
-PY
     echo '<h2>Hosts</h2>'
     for group in infrastructure lab; do
-      jq -r --arg g "$group" '(if $g == "lab" then "Lab environment <span class=\"note\">the hosts you work with, *.\(.base | @html)</span>" else "Infrastructure <span class=\"note\">supporting services, \(.base | @html)</span>" end) as $t | "<h3>\($t)</h3>\n<table class=\"hosts\">\n  <thead><tr><th>Host</th><th>vCPU</th><th>RAM</th><th>Disks</th><th>Air-gapped</th></tr></thead>\n  <tbody>", (.[$g][] | "    <tr><td><code>\(.name | @html)</code></td><td>\(.cpu)</td><td>\(.ram)</td><td>\(.disks | @html)</td><td>\(.airgapped)</td></tr>"), "  </tbody>\n</table>"' hosts.json
+      jq -r --arg g "$group" '
+        def gb: (. / 1024 | round | tostring) + " GB";
+        def dsk: if length == 0 then "–" else (reduce .[] as $v ([]; if length > 0 and .[-1][0] == $v then .[-1][1] += 1 else . + [[$v, 1]] end) | map(if .[1] > 1 then "\(.[1])×\(.[0])" else "\(.[0])" end) | join(" + ")) + " GB" end;
+        def air: if . == true then "yes" elif . == "soft" then "soft" else "–" end;
+        .hosts as $h
+        | (if $g == "lab" then "Lab environment <span class=\"note\">the hosts you work with, *.\($h.base | @html)</span>" else "Infrastructure <span class=\"note\">supporting services, \($h.base | @html)</span>" end) as $t
+        | "<h3>\($t)</h3>\n<table class=\"hosts\">\n  <thead><tr><th>Host</th><th>vCPU</th><th>RAM</th><th>Disks</th><th>Air-gapped</th></tr></thead>\n  <tbody>",
+          ($h[$g][] | "    <tr><td><code>\(.name | @html)</code></td><td>\(.cpu)</td><td>\(.ram_mb | gb)</td><td>\(.disks | dsk | @html)</td><td>\(.airgapped | air)</td></tr>"),
+          "  </tbody>\n</table>"' index.json
     done
-    rm hosts.json
   fi
   if [ -n "$build" ]; then
     python3 -c 'import sys, yaml, json; json.dump(yaml.safe_load(open(sys.argv[1])), sys.stdout, default=str)' "$build" > build.json
