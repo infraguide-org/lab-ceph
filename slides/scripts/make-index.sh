@@ -19,15 +19,16 @@ for md in "$src"/*.md; do
   [ "$name" = README ] && continue
   [ -f "$name.html" ] || continue
   title=$(sed -n '/^---$/,/^---$/{s/^title: *//p;}' "$md" | head -1 | sed 's/^"//; s/"$//')
+  order=$(sed -n '/^---$/,/^---$/{s/^order: *//p;}' "$md" | head -1)
   covers=${name#slides-}
   covers=${covers^}
-  decks=$(jq -c --arg n "$name" --arg t "${title:-$name}" --arg c "$covers" \
-    '. + [{name: $n, title: $t, covers: $c, html: "\($n).html", pdf: "\($n).pdf", pptx: "\($n).pptx"}]' <<<"$decks")
+  decks=$(jq -c --arg n "$name" --arg t "${title:-$name}" --arg c "$covers" --argjson o "${order:-999}" \
+    '. + [{name: $n, title: $t, covers: $c, order: $o, html: "\($n).html", pdf: "\($n).pdf", pptx: "\($n).pptx"}]' <<<"$decks")
 done
 
 files=$(find . -type f ! -name 'index.*' | sed 's#^\./##' | sort | jq -R -s -c 'split("\n") | map(select(length > 0))')
 
-jq -n --arg lab "$lab" --argjson decks "$decks" --argjson files "$files" \
+jq -n --arg lab "$lab" --argjson decks "$(jq -c 'sort_by(.order)' <<<"$decks")" --argjson files "$files" \
   '{schema: 1, lab: $lab, decks: $decks, files: $files}' > index.json
 
 {
