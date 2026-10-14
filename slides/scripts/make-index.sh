@@ -51,6 +51,9 @@ jq -n --arg lab "$lab" --argjson decks "$(jq -c 'sort_by(.order)' <<<"$decks")" 
   .passed { color: #15803d; }
   .failed { color: #b91c1c; }
   .pending { color: #b45309; }
+  .summary { display: inline-block; margin-left: .5rem; padding: .15rem .75rem; border-radius: 999px; font-weight: 600; border: 1px solid; }
+  .summary.ok { color: #15803d; background: #dcfce7; border-color: #86efac; }
+  .summary.bad { color: #b91c1c; background: #fee2e2; border-color: #fca5a5; }
   footer { margin-top: 2rem; font-size: .8rem; color: #fff; }
   footer ::selection, footer::selection { background: #2b6cb0; color: #fff; }
   a { color: #2b6cb0; text-decoration: none; }
@@ -71,7 +74,7 @@ HTML
   if [ -n "$build" ]; then
     python3 -c 'import sys, yaml, json; json.dump(yaml.safe_load(open(sys.argv[1])), sys.stdout, default=str)' "$build" > build.json
     echo '<h2>Build</h2>'
-    jq -r '"<p>\([.date, .node, .duration] | map(tostring | @html) | join(" · ")) · \([.checks[] | select(.status == "passed")] | length) of \(.checks | length) checks passed</p>"' build.json
+    jq -r '([.checks[] | select(.status == "passed")] | length) as $ok | (.checks | length) as $all | "<p>\([.date, .node, .duration] | map(tostring | @html) | join(" · ")) <span class=\"summary \(if $ok == $all then "ok" else "bad" end)\">\($ok) of \($all) checks passed</span></p>"' build.json
     echo '<table class="checks">'
     echo '  <thead><tr><th>Check</th><th>Status</th></tr></thead>'
     echo '  <tbody>'
