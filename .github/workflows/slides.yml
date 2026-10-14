@@ -9,6 +9,7 @@ on:
       - "slides/src/**"
       - "slides/scripts/**"
       - "status/**"
+      - "conf/env.yaml"
       - ".github/workflows/slides.yml"
   workflow_dispatch:
 
@@ -37,7 +38,7 @@ jobs:
           cp -r assets ../dist/assets
 
       - name: Create index.json and index.html
-        run: slides/scripts/make-index.sh "${GITHUB_REPOSITORY#*/lab-}" slides/src slides/dist status/build.yml
+        run: slides/scripts/make-index.sh "${GITHUB_REPOSITORY#*/lab-}" slides/src slides/dist status/build.yml conf/env.yaml
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v4
