@@ -1,1 +1,5 @@
+# Source: https://github.com/infraguide-org/lab-ceph
+# Copyright (c) 2026 infraguide.org, MIT License
 slides/dist/
+*.swp
+*.swo
