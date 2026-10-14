@@ -7,6 +7,8 @@
 # Usage: make-index.sh <lab> <src-dir> <dist-dir> [build-yml] [env-yaml]
 # The optional build.yml (status/build.yml) adds a Build section to index.html,
 # the optional env.yaml (conf/env.yaml) adds a Hosts section and a hosts object in index.json.
+# An environment diagram at assets/<lab>/env.svg adds an Environment section and a diagram
+# entry (its path) in index.json.
 set -euo pipefail
 
 lab=$1
@@ -31,6 +33,9 @@ for md in "$src"/*.md; do
 done
 
 files=$(find . -type f ! -name 'index.*' | sed 's#^\./##' | sort | jq -R -s -c 'split("\n") | map(select(length > 0))')
+
+diagram=""
+[ -f "assets/$lab/env.svg" ] && diagram="assets/$lab/env.svg"
 
 hosts=null
 if [ -n "$env" ]; then
@@ -60,8 +65,8 @@ PY
 )
 fi
 
-jq -n --arg lab "$lab" --argjson decks "$(jq -c 'sort_by(.order)' <<<"$decks")" --argjson files "$files" --argjson hosts "$hosts" \
-  '{schema: 1, lab: $lab, decks: $decks, files: $files} + (if $hosts then {hosts: $hosts} else {} end)' > index.json
+jq -n --arg lab "$lab" --argjson decks "$(jq -c 'sort_by(.order)' <<<"$decks")" --argjson files "$files" --argjson hosts "$hosts" --arg diagram "$diagram" \
+  '{schema: 1, lab: $lab, decks: $decks, files: $files} + (if $diagram != "" then {diagram: $diagram} else {} end) + (if $hosts then {hosts: $hosts} else {} end)' > index.json
 
 {
   cat <<HTML
@@ -82,6 +87,7 @@ jq -n --arg lab "$lab" --argjson decks "$(jq -c 'sort_by(.order)' <<<"$decks")" 
   .failed { color: #b91c1c; }
   .pending { color: #b45309; }
   table.hosts th:nth-child(n+2), table.hosts td:nth-child(n+2) { width: 16%; }
+  img.diagram { max-width: 100%; height: auto; }
   .note { color: #6b7280; font-weight: 400; font-size: .85rem; }
   .summary { display: inline-block; margin-left: .5rem; padding: .15rem .75rem; border-radius: 999px; font-weight: 600; border: 1px solid; }
   .summary.ok { color: #15803d; background: #dcfce7; border-color: #86efac; }
@@ -103,6 +109,10 @@ HTML
   </tbody>
 </table>
 HTML
+  if [ -n "$diagram" ]; then
+    echo '<h2>Environment</h2>'
+    echo "<img class=\"diagram\" src=\"$diagram\" alt=\"Lab environment diagram\">"
+  fi
   if [ -n "$env" ]; then
     echo '<h2>Hosts</h2>'
     for group in infrastructure lab; do
