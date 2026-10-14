@@ -121,7 +121,7 @@ HTML
         def dsk: if length == 0 then "–" else (reduce .[] as $v ([]; if length > 0 and .[-1][0] == $v then .[-1][1] += 1 else . + [[$v, 1]] end) | map(if .[1] > 1 then "\(.[1])×\(.[0])" else "\(.[0])" end) | join(" + ")) + " GB" end;
         def air: if . == true then "yes" elif . == "soft" then "soft" else "–" end;
         .hosts as $h
-        | (if $g == "lab" then "Lab environment <span class=\"note\">the hosts you work with, *.\($h.base | @html)</span>" else "Infrastructure <span class=\"note\">supporting services, \($h.base | @html)</span>" end) as $t
+        | (if $g == "lab" then "Lab environment <span class=\"note\">the hosts you work with</span>" else "Infrastructure <span class=\"note\">supporting services</span>" end) as $t
         | "<h3>\($t)</h3>\n<table class=\"hosts\">\n  <thead><tr><th>Host</th><th>vCPU</th><th>RAM</th><th>Disks</th><th>Air-gapped</th></tr></thead>\n  <tbody>",
           ($h[$g][] | "    <tr><td><code>\(.name | @html)</code></td><td>\(.cpu)</td><td>\(.ram_mb | gb)</td><td>\(.disks_gb | dsk | @html)</td><td>\(.airgapped | air)</td></tr>"),
           "  </tbody>\n</table>"' index.json
