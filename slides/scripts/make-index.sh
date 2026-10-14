@@ -41,7 +41,7 @@ jq -n --arg lab "$lab" --argjson decks "$(jq -c 'sort_by(.order)' <<<"$decks")" 
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Ceph Lab</title>
 <style>
-  body { font: 16px/1.5 system-ui, sans-serif; max-width: 52rem; margin: 2rem auto; padding: 0 1rem; color: #111; }
+  body { font: 16px/1.5 system-ui, sans-serif; max-width: 52rem; margin: 2rem auto; padding: 0 1rem; color: #111; background: #fff; }
   img.logo { height: 44px; display: block; margin-bottom: 1.5rem; }
   table { width: 100%; border-collapse: collapse; table-layout: fixed; }
   th, td { padding: .6rem .8rem; border-bottom: 1px solid #e5e7eb; text-align: left; }
@@ -51,6 +51,8 @@ jq -n --arg lab "$lab" --argjson decks "$(jq -c 'sort_by(.order)' <<<"$decks")" 
   .passed { color: #15803d; }
   .failed { color: #b91c1c; }
   .pending { color: #b45309; }
+  footer { margin-top: 2rem; font-size: .8rem; color: #fff; }
+  footer ::selection, footer::selection { background: #2b6cb0; color: #fff; }
   a { color: #2b6cb0; text-decoration: none; }
   a:hover { text-decoration: underline; }
 </style>
@@ -78,5 +80,6 @@ HTML
     echo '</table>'
     rm build.json
   fi
+  echo "<footer>built <time datetime=\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\">$(date -u '+%Y-%m-%d %H:%M UTC')</time></footer>"
   echo '</html>'
 } > index.html
