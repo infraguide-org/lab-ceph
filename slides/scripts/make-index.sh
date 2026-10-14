@@ -53,7 +53,7 @@ jq -n --arg lab "$lab" --argjson decks "$(jq -c 'sort_by(.order)' <<<"$decks")" 
   .passed { color: #15803d; }
   .failed { color: #b91c1c; }
   .pending { color: #b45309; }
-  table.hosts th:nth-child(n+2), table.hosts td:nth-child(n+2) { width: 22%; }
+  table.hosts th:nth-child(n+2), table.hosts td:nth-child(n+2) { width: 16%; }
   .note { color: #6b7280; font-weight: 400; font-size: .85rem; }
   .summary { display: inline-block; margin-left: .5rem; padding: .15rem .75rem; border-radius: 999px; font-weight: 600; border: 1px solid; }
   .summary.ok { color: #15803d; background: #dcfce7; border-color: #86efac; }
@@ -92,7 +92,8 @@ def disks(values):
     return " + ".join(f"{n}×{v}" if n > 1 else str(v) for v, n in runs) + " GB" if runs else "–"
 
 def host(s):
-    return {"name": s["hostname"], "cpu": s["cpu"], "ram": f"{round(s['ram'] / 1024)} GB", "disks": disks(s.get("disks"))}
+    airgapped = {True: "yes", "soft": "soft"}.get(s.get("airgapped"), "–")
+    return {"name": s["hostname"], "cpu": s["cpu"], "ram": f"{round(s['ram'] / 1024)} GB", "disks": disks(s.get("disks")), "airgapped": airgapped}
 
 servers.sort(key=lambda s: s["id"])
 json.dump({
@@ -103,7 +104,7 @@ json.dump({
 PY
     echo '<h2>Hosts</h2>'
     for group in infrastructure lab; do
-      jq -r --arg g "$group" '(if $g == "lab" then "Lab environment <span class=\"note\">the hosts you work with, *.\(.base | @html)</span>" else "Infrastructure <span class=\"note\">supporting services, \(.base | @html)</span>" end) as $t | "<h3>\($t)</h3>\n<table class=\"hosts\">\n  <thead><tr><th>Host</th><th>vCPU</th><th>RAM</th><th>Disks</th></tr></thead>\n  <tbody>", (.[$g][] | "    <tr><td><code>\(.name | @html)</code></td><td>\(.cpu)</td><td>\(.ram)</td><td>\(.disks | @html)</td></tr>"), "  </tbody>\n</table>"' hosts.json
+      jq -r --arg g "$group" '(if $g == "lab" then "Lab environment <span class=\"note\">the hosts you work with, *.\(.base | @html)</span>" else "Infrastructure <span class=\"note\">supporting services, \(.base | @html)</span>" end) as $t | "<h3>\($t)</h3>\n<table class=\"hosts\">\n  <thead><tr><th>Host</th><th>vCPU</th><th>RAM</th><th>Disks</th><th>Air-gapped</th></tr></thead>\n  <tbody>", (.[$g][] | "    <tr><td><code>\(.name | @html)</code></td><td>\(.cpu)</td><td>\(.ram)</td><td>\(.disks | @html)</td><td>\(.airgapped)</td></tr>"), "  </tbody>\n</table>"' hosts.json
     done
     rm hosts.json
   fi
