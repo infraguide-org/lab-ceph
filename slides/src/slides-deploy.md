@@ -102,7 +102,7 @@ mermaid.initialize({ startOnLoad: true, theme: 'default' });
 
 ---
 # Ceph Network
-![bg right:50% 90%](assets/ceph-environment.drawio.svg)
+![bg right:50% 90%](assets/environment.drawio.svg)
 
 ---
 # Air-Gapped Environment
