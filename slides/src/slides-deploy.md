@@ -1160,7 +1160,7 @@ fio               \
 
 # Feedback and contributions
 
-Found an error or want to contribute? Open a PR on [GitHub](https://github.com/codecap/infraguide/tree/main).
+Found an error or want to contribute? Open a PR on [GitHub](https://github.com/infraguide-org/lab-ceph/tree/main).
 
 More labs and cheat sheets: [infraguide.org](https://infraguide.org)
 
