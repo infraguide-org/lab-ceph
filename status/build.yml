@@ -1,0 +1,39 @@
+# Source: https://github.com/infraguide-org/lab-ceph
+# Copyright (c) 2026 infraguide.org, MIT License
+# Result of the automatic Ceph lab build.
+# Updated periodically by the build job; infraguide.org fetches this file from main at its build time.
+# checks[].text is shown as is on the lab page; status is passed, failed or any other value for pending.
+date: 2026-10-05
+node: node61
+duration: 4306 sec
+checks:
+  - name: nodes_created
+    text: Nodes created
+    status: passed
+  - name: nodes_configured
+    text: Nodes configured
+    status: passed
+  - name: deployment
+    text: Deployment
+    status: passed
+  - name: post_deployment_check
+    text: Post-deployment check
+    status: passed
+  - name: rbd_check
+    text: RBD check
+    status: passed
+  - name: cephfs_check
+    text: CephFS check
+    status: passed
+  - name: s3_check
+    text: S3 check
+    status: passed
+  - name: dashboard_accessible
+    text: Dashboard accessible
+    status: passed
+  - name: monitoring
+    text: Monitoring accessible and working
+    status: passed
+  - name: smoke_test
+    text: Smoke test
+    status: failed

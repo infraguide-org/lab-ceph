@@ -1,7 +1,0 @@
-# Source: https://github.com/infraguide-org/lab-ceph
-# Copyright (c) 2026 infraguide.org, MIT License
-# Metadata about the automatic Ceph lab build.
-# Updated periodically by the build job; infraguide.org fetches this file from main at its build time.
-date: 2026-10-05
-node: node61
-duration: 4306 sec
