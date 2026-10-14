@@ -51,7 +51,7 @@ def host(s):
         "fqdn": f"{s['hostname']}.{s['domain']}",
         "cpu": s["cpu"],
         "ram_mb": s["ram"],
-        "disks": s.get("disks") or [],
+        "disks_gb": s.get("disks") or [],
         "airgapped": s.get("airgapped", False),
     }
 
@@ -123,7 +123,7 @@ HTML
         .hosts as $h
         | (if $g == "lab" then "Lab environment <span class=\"note\">the hosts you work with, *.\($h.base | @html)</span>" else "Infrastructure <span class=\"note\">supporting services, \($h.base | @html)</span>" end) as $t
         | "<h3>\($t)</h3>\n<table class=\"hosts\">\n  <thead><tr><th>Host</th><th>vCPU</th><th>RAM</th><th>Disks</th><th>Air-gapped</th></tr></thead>\n  <tbody>",
-          ($h[$g][] | "    <tr><td><code>\(.name | @html)</code></td><td>\(.cpu)</td><td>\(.ram_mb | gb)</td><td>\(.disks | dsk | @html)</td><td>\(.airgapped | air)</td></tr>"),
+          ($h[$g][] | "    <tr><td><code>\(.name | @html)</code></td><td>\(.cpu)</td><td>\(.ram_mb | gb)</td><td>\(.disks_gb | dsk | @html)</td><td>\(.airgapped | air)</td></tr>"),
           "  </tbody>\n</table>"' index.json
     done
   fi
