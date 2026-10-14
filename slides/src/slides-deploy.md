@@ -1,5 +1,6 @@
 ---
 title: "Ceph Workshop Slides"
+order: 1
 description: "Free Ceph workshop slides: Deploy and operate a Ceph cluster from scratch."
 author:      infraguide.org
 keywords:    ceph,storage,rbd,cephfs,radosgw,workshop,operations
