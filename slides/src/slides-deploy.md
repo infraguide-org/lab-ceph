@@ -1,4 +1,6 @@
 ---
+# Source: https://github.com/infraguide-org/lab-ceph
+# Copyright (c) 2026 infraguide.org, MIT License
 title: "Ceph Workshop Slides"
 order: 1
 description: "Free Ceph workshop slides: Deploy and operate a Ceph cluster from scratch."
