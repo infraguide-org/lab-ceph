@@ -177,7 +177,7 @@ CEPH_SPEC="$HOME/ceph/spec.yaml"
 CEPH_MON_IP=$(ip -br a | grep strg0 | awk '{print $NF}' | cut -d / -f 1)
 CEPH_PUBLIC_NET="10.20.21.0/24"
 CEPH_CLUSTER_NET="10.20.22.0/24"
-CEPH_IMAGE="registry.wrx.sckt.net/quay/ceph/ceph:v$CEPH_VERSION"
+CEPH_IMAGE="registry.lab.nfgd.net/quay/ceph/ceph:v$CEPH_VERSION"
 SPEC="$HOME/ceph/spec.yaml"
 
 cd ~/ceph
@@ -295,7 +295,7 @@ do
   # Docs: https://docs.ceph.com/en/latest/radosgw/config-ref/#keystone-settings
   #       https://documentation.suse.com/ses/7/html/ses-all/cha-ceph-configuration.html#id-1.4.8.2.8.3.6
   # ceph config set $r rgw_keystone_verify_ssl     "false"
-  ceph config set $r rgw_keystone_url              "https://keystone.os.svc.wrx.sckt.net"
+  ceph config set $r rgw_keystone_url              "https://keystone.os.svc.lab.nfgd.net"
   ceph config set $r rgw_keystone_api_version      "3"
   ceph config set $r rgw_keystone_admin_user       "ceph_rgw"
   ceph config set $r rgw_keystone_admin_password   "KEYSTONE_ADMIN_PASSWORD"
@@ -307,7 +307,7 @@ do
   ceph config set $r rgw_swift_account_in_url      "true"
   ceph config set $r rgw_swift_versioning_enabled  "true"
   ceph config set $r rgw_s3_auth_use_keystone      "true"
-  ceph config set $r rgw_dns_name                  "s3.svc.wrx.sckt.net"
+  ceph config set $r rgw_dns_name                  "s3.svc.lab.nfgd.net"
 done
 
 sleep 5;
@@ -331,10 +331,10 @@ ceph osd tree
 ---
 # State Overview
 ![bg right:30% 50%](assets/pics/ceph/icon-ceph.svg)
-- [Ceph/Dashboard](https://cephmon01.strg.wrx.sckt.net:8443)
-- [Grafana/Monitoring](https://cephgra01.strg.wrx.sckt.net:3000)
-- [Prometheus/Monitoring](http://cephgra01.strg.wrx.sckt.net:9095)
-- [Alertmanager](http://cephgra01.strg.wrx.sckt.net:9093)
+- [Ceph/Dashboard](https://cephmon01.strg.lab.nfgd.net:8443)
+- [Grafana/Monitoring](https://cephgra01.strg.lab.nfgd.net:3000)
+- [Prometheus/Monitoring](http://cephgra01.strg.lab.nfgd.net:9095)
+- [Alertmanager](http://cephgra01.strg.lab.nfgd.net:9093)
 
 
 ---
@@ -656,11 +656,11 @@ cat > ~/.aws/config <<EOF
 endpoint = awscli_plugin_endpoint
 [profile default]
 s3 =
-  endpoint_url = http://s3.strg.wrx.sckt.net
+  endpoint_url = http://s3.strg.lab.nfgd.net
   signature_version = s3v4
   addressing_style = auto
 s3api =
-  endpoint_url = http://s3.strg.wrx.sckt.net
+  endpoint_url = http://s3.strg.lab.nfgd.net
 EOF
 
 cat > ~/.aws/credentials <<EOF
@@ -690,13 +690,13 @@ cat  /tmp/test.txt
 ![bg right:50% 30%](assets/pics/ceph/icon-ceph.svg)
 ```bash
 # Install and configure mc client                                           📋
-sudo curl --proxy proxy.wrx.sckt.net:3128            \
+sudo curl --proxy proxy.lab.nfgd.net:3128            \
  -o /usr/local/bin/mc -L                             \
  https://dl.min.io/client/mc/release/linux-amd64/mc
 sudo chmod 755 /usr/local/bin/mc
 
 # Configure
-mc alias set s3 http://s3.strg.wrx.sckt.net {ACCESS_KEY} {SECRET_KEY}
+mc alias set s3 http://s3.strg.lab.nfgd.net {ACCESS_KEY} {SECRET_KEY}
 mc alias ls
 mc --autocompletion
 source ~/.bashrc
@@ -752,7 +752,7 @@ ceph osd unset noout
 ```bash
 # Upgrade ceph cluster                                                      📋
 VERSION="19.2.3"
-IMAGE=registry.wrx.sckt.net/quay/ceph/ceph:v$VERSION
+IMAGE=registry.lab.nfgd.net/quay/ceph/ceph:v$VERSION
 
 # check
 ceph health
@@ -1147,14 +1147,14 @@ fio               \
 # Links
 - [Ceph - Docs](https://docs.ceph.com/)
 - [Ceph - Releases](https://docs.ceph.com/en/latest/releases/)
-- [Ceph - Dashboard](https://cephmon01.strg.wrx.sckt.net:8443)
-- [Ceph - Grafana / Monitoring](https://cephgra01.strg.wrx.sckt.net:3000)
-- [Ceph - Prometheus / Monitoring](https://cephgra01.strg.wrx.sckt.net:9095)
-- [Ceph - Alertmanager](https://cephgra01.strg.wrx.sckt.net:9093)
+- [Ceph - Dashboard](https://cephmon01.strg.lab.nfgd.net:8443)
+- [Ceph - Grafana / Monitoring](https://cephgra01.strg.lab.nfgd.net:3000)
+- [Ceph - Prometheus / Monitoring](https://cephgra01.strg.lab.nfgd.net:9095)
+- [Ceph - Alertmanager](https://cephgra01.strg.lab.nfgd.net:9093)
 <br/>
 - [Cephadm - Guide](https://docs.ceph.com/en/latest/cephadm/install/)
 <br/>
-- [Harbor - Registry](http://registry.wrx.sckt.net/)
+- [Harbor - Registry](http://registry.lab.nfgd.net/)
 
 ---
 
