@@ -37,8 +37,6 @@ cp -a "${tmp}/${DIR}"/* "$DEST"/
 ##############################################################################
 # ssh config
 ./scripts/print-ssh-config  >> ~/.ssh/config
-ssh-keygen -t ed25519 -N '' -f ~/.ssh/id_ed25519
-cat /root/.ssh/id_ed25519.pub >> /home/debian/.ssh/authorized_keys
 
 ##############################################################################
 # create environment
@@ -52,7 +50,7 @@ LAB_INFRA_NODES_GR2="deployment|recorder"
 print-create-env-commands  | grep -E "name +($LAB_INFRA_NODES_GR1)" | bash
 
 echo ""
-echo "Waiting for the first group to get prapared"; sleep 200
+echo "Waiting for the first group to get prapared"; sleep 120
 echo ""
 ##############################################################################
 # Infra nodes group2
