@@ -155,7 +155,7 @@ graph LR
 ![bg right:30% 50%](assets/pics/ceph/icon-ceph.svg)
 ```bash
 # as deploy on deployment host                                              📋
-sudo apt install cephadm ceph-common python3-jinja2 -y
+sudo apt install cephadm ceph-common ceph-fuse python3-jinja2 -y
 
 # create ssh keypair for ceph
 sudo ssh-keygen -t rsa -N '' -f /etc/ceph/id_rsa
@@ -201,28 +201,40 @@ sudo cephadm --image "$CEPH_IMAGE"                     \
 #       --verbose
 #       --retry <NR>
 
-# wait a moment
-until sudo ceph -s | grep -q HEALTH_OK; do sudo ceph -s; sleep 5; done
-
-# continue
-sudo ceph orch apply -i $CEPH_SPEC
-
+# wait a moment, check health
+sudo ceph -s
 ```
-
 
 ---
 # Deploy Ceph with Cephadm
-![bg right:30% 50%](assets/pics/ceph/icon-ceph.svg)
-**Set crush rules**
+![bg right:50% 30%](assets/pics/ceph/icon-ceph.svg)
 ```bash
-                                                                            📋
-ceph osd crush rule create-replicated replicated_rule_nvme default host nvme
-ceph osd pool ls | while read p
-do
-  ceph osd pool set $p crush_rule replicated_rule_nvme
-done
-ceph osd crush rule rm replicated_rule
+# Ceph cluster was created, but is not running on all target nodes yet      📋
+
+# on deploy node
+
+sudo docker ps
+
+sudo ceph orch host ls
+
+# Review $CEPH_SPEC file and apply
+
+sudo ceph orch apply -i $CEPH_SPEC
 ```
+
+[//]: # (---)
+[//]: # (# Deploy Ceph with Cephadm)
+[//]: # ( ![bg right:30% 50%]\(assets/pics/ceph/icon-ceph.svg\) )
+[//]: # (**Set crush rules**)
+[//]: # (```bash)
+[//]: # (                                                                            📋)
+[//]: # (ceph osd crush rule create-replicated replicated_rule_nvme default host nvme)
+[//]: # (ceph osd pool ls | while read p)
+[//]: # (do)
+[//]: # (  ceph osd pool set $p crush_rule replicated_rule_nvme)
+[//]: # (done)
+[//]: # (ceph osd crush rule rm replicated_rule)
+[//]: # (```)
 
 ---
 # Deploy Ceph with Cephadm
@@ -272,8 +284,7 @@ done
 ---
 # Prepare for OpenStack
 ![bg right:30% 50%](assets/pics/ceph/icon-ceph.svg)
-
-**Create pools for OpenStack services**
+### **Create pools for OpenStack services**
 
 ```bash
 # as root on deployment host                                                📋
@@ -285,36 +296,36 @@ do
 done
 ```
 
----
-# Prepare for OpenStack
-![bg right:30% 50%](assets/pics/ceph/icon-ceph.svg)
-
-**Configure Ceph to be used as backend for OpenStack Swift (Object Storage)**
-
-```bash
-for r in $(ceph config dump | grep rgw_frontends | awk '{print $1}')
-do
-  # Docs: https://docs.ceph.com/en/latest/radosgw/config-ref/#keystone-settings
-  #       https://documentation.suse.com/ses/7/html/ses-all/cha-ceph-configuration.html#id-1.4.8.2.8.3.6
-  # ceph config set $r rgw_keystone_verify_ssl     "false"
-  ceph config set $r rgw_keystone_url              "https://keystone.os.svc.lab.nfgd.net"
-  ceph config set $r rgw_keystone_api_version      "3"
-  ceph config set $r rgw_keystone_admin_user       "ceph_rgw"
-  ceph config set $r rgw_keystone_admin_password   "KEYSTONE_ADMIN_PASSWORD"
-  ceph config set $r rgw_keystone_admin_project    "service"
-  ceph config set $r rgw_keystone_admin_domain     "default"
-  ceph config set $r rgw_keystone_accepted_roles   "member, _member_, admin"
-  ceph config set $r rgw_keystone_implicit_tenants "true"
-  ceph config set $r rgw_enable_apis               "s3, swift"
-  ceph config set $r rgw_swift_account_in_url      "true"
-  ceph config set $r rgw_swift_versioning_enabled  "true"
-  ceph config set $r rgw_s3_auth_use_keystone      "true"
-  ceph config set $r rgw_dns_name                  "s3.svc.lab.nfgd.net"
-done
-
-sleep 5;
-ceph orch restart rgw.default
-```
+[//]: # (---)
+[//]: # (# Prepare for OpenStack)
+[//]: # (![bg right:30% 50%]\(assets/pics/ceph/icon-ceph.svg\))
+[//]: # ()
+[//]: # (**Configure Ceph to be used as backend for OpenStack Swift \(Object Storage\)**)
+[//]: # ()
+[//]: # (```bash)
+[//]: # (for r in $\(ceph config dump | grep rgw_frontends | awk '{print $1}'\))
+[//]: # (do)
+[//]: # (  # Docs: https://docs.ceph.com/en/latest/radosgw/config-ref/#keystone-settings)
+[//]: # (  #       https://documentation.suse.com/ses/7/html/ses-all/cha-ceph-configuration.html#id-1.4.8.2.8.3.6)
+[//]: # (  # ceph config set $r rgw_keystone_verify_ssl     "false")
+[//]: # (  ceph config set $r rgw_keystone_url              "https://keystone.os.svc.lab.nfgd.net")
+[//]: # (  ceph config set $r rgw_keystone_api_version      "3")
+[//]: # (  ceph config set $r rgw_keystone_admin_user       "ceph_rgw")
+[//]: # (  ceph config set $r rgw_keystone_admin_password   "KEYSTONE_ADMIN_PASSWORD")
+[//]: # (  ceph config set $r rgw_keystone_admin_project    "service")
+[//]: # (  ceph config set $r rgw_keystone_admin_domain     "default")
+[//]: # (  ceph config set $r rgw_keystone_accepted_roles   "member, _member_, admin")
+[//]: # (  ceph config set $r rgw_keystone_implicit_tenants "true")
+[//]: # (  ceph config set $r rgw_enable_apis               "s3, swift")
+[//]: # (  ceph config set $r rgw_swift_account_in_url      "true")
+[//]: # (  ceph config set $r rgw_swift_versioning_enabled  "true")
+[//]: # (  ceph config set $r rgw_s3_auth_use_keystone      "true")
+[//]: # (  ceph config set $r rgw_dns_name                  "s3.svc.lab.nfgd.net")
+[//]: # (done)
+[//]: # ()
+[//]: # (sleep 5;)
+[//]: # (ceph orch restart rgw.default)
+[//]: # (```)
 
 ---
 # Test
@@ -551,7 +562,7 @@ lsblk
 ls -lh /dev/rbd0  /dev/rbd/test/demo-disk
 mkfs.ext4 /dev/rbd/test/demo-disk
 mount     /dev/rbd/test/demo-disk /mnt/
-echo "Hello from Ceph RBD Storage!" > /mnt/test.txt
+echo "Hello from Ceph RBD Storage!" > /mnt/test.txt; sync
 ```
 
 ---
@@ -650,7 +661,11 @@ radosgw-admin user info --uid  demo-user
 ![bg right:50% 30%](assets/pics/ceph/icon-ceph.svg)
 ```bash
 # Install and configure awscli                                              📋
+python3 -m venv ~/venv/ceph-tools
+source ~/venv/ceph-tools/bin/activate
+pip3 install -U pip
 pip3 install awscli awscli-plugin-endpoint
+
 
 mkdir ~/.aws
 cat > ~/.aws/config <<EOF
@@ -670,6 +685,9 @@ cat > ~/.aws/credentials <<EOF
 aws_access_key_id = {ACCESS_KEY}
 aws_secret_access_key = {SECRET_KEY}
 EOF
+
+# List buckets
+aws s3 ls s3:///
 
 # Create a new bucket
 aws s3 mb s3://demo-bucket
@@ -692,10 +710,14 @@ cat  /tmp/test.txt
 ![bg right:50% 30%](assets/pics/ceph/icon-ceph.svg)
 ```bash
 # Install and configure mc client                                           📋
-sudo curl --proxy proxy.lab.nfgd.net:3128            \
- -o /usr/local/bin/mc -L                             \
- https://dl.min.io/client/mc/release/linux-amd64/mc
-sudo chmod 755 /usr/local/bin/mc
+TAG=$(
+  curl -fsSL --proxy proxy.lab.nfgd.net:3128 \
+      https://api.github.com/repos/minio/mc/releases/latest | jq -Mr .tag_name
+)
+
+curl -fsSL -o mc "https://github.com/minio/mc/releases/download/${TAG}/mc.linux-amd64.${TAG}"
+chmod +x mc && sudo mv mc /usr/local/bin/
+
 
 # Configure
 mc alias set s3 http://s3.strg.lab.nfgd.net {ACCESS_KEY} {SECRET_KEY}
@@ -713,7 +735,6 @@ mc cat s3/demo-bucket/project1/test.txt
 ## Update system packages and reboot
 ![bg right:55% 25%](assets/pics/ceph/icon-ceph.svg)
 
-[//]: # (FIXME: the same with ceph orch host maintenance enter)
 
 ```bash
 # Stop ceph services on cephosd03 as root                                   📋
@@ -748,8 +769,27 @@ ceph osd unset noout
 
 ---
 # Operations
+## Update system packages and reboot
+![bg right:55% 25%](assets/pics/ceph/icon-ceph.svg)
+
+
+```bash
+# The same with ceph orch
+ceph orch host maintenance enter cephosd03  --force --yes-i-really-mean-it
+
+# Upgrade and reboot the host
+
+ceph orch host maintenance exit cephosd03
+
+ceph status
+```
+
+---
+# Operations
 ## Upgrade
 ![bg right:55% 25%](assets/pics/ceph/icon-ceph.svg)
+[Review first](https://infraguide.org/cheat-sheets/ceph/#pre-upgrade-backups--checks)
+
 
 ```bash
 # Upgrade ceph cluster                                                      📋
@@ -802,7 +842,7 @@ ceph orch upgrade status
 # continue with the rest
 ceph orch upgrade start --image $IMAGE
 
-# Check available upgrade version for ceph packages
+# Check available upgrade version for ceph packages on deployment node
 apt-cache policy ceph-common
 apt install -y cephadm-<VERSION> ceph-common-<VERSION>
 ```
@@ -881,6 +921,9 @@ ceph status
 ceph health detail
 
 ceph orch daemon rm osd.<OSD.NR> --force
+
+# on osdhost check if the device was zapped
+lsblk
 ```
 
 ---
@@ -943,11 +986,13 @@ ceph osd set noout
 ceph osd set norecover
 
 # 🚧 Drain the Ceph OSD host
-ceph orch host drain <hostname> [--zap-osd-device]
+ceph orch host drain <hostname> [--zap-osd-devices]
 ceph orch host drain status
 ceph orch device ls  [hostname]
 ceph orch osd  rm --zap <OSD_NR> --force
 ceph orch host rm     <hostname> --force
+
+# Reboot the host
 
 # Join the cluster again
 ceph orch set-managed osd.ssd
