@@ -159,6 +159,7 @@ sudo apt install cephadm ceph-common ceph-fuse python3-jinja2 -y
 
 # create ssh keypair for ceph
 sudo ssh-keygen -t rsa -N '' -f /etc/ceph/id_rsa
+
 # copy the pub key to ceph nodes
 for i in cephmon0{1..3} cephosd0{1..3} cephgra01 deployment
 do
@@ -211,7 +212,7 @@ sudo ceph -s
 ```bash
 # Ceph cluster was created, but is not running on all target nodes yet      📋
 
-# on deploy node
+# Review the state on deploy node
 
 sudo docker ps
 
@@ -239,7 +240,7 @@ sudo ceph orch apply -i $CEPH_SPEC
 ---
 # Deploy Ceph with Cephadm
 ![bg right:30% 50%](assets/pics/ceph/icon-ceph.svg)
-### Create client keys for OpenStack services
+### **Create client keys for OpenStack services**
 ```bash
 # as root on deployment node, create the .keyring files                     📋
 cat > /etc/ceph/ceph.client.glance.keyring <<EOF
@@ -328,7 +329,7 @@ done
 [//]: # (```)
 
 ---
-# Test
+# Check it out
 ![bg right:30% 50%](assets/pics/ceph/icon-ceph.svg)
 ```bash
 # On deployment node (as root or with sudo)                                 📋
@@ -481,7 +482,7 @@ ceph tell mgr.* version
 # OSDs
 ![bg right:30% 50%](assets/pics/ceph/icon-ceph.svg)
 ```bash
-                                                                            📋
+# Review the state of OSDs                                                  📋
 ceph osd status
 ceph osd tree
 ceph osd df
@@ -493,7 +494,7 @@ ceph osd versions
 # Pools
 ![bg right:30% 50%](assets/pics/ceph/icon-ceph.svg)
 ```bash
-                                                                            📋
+# Review the ods pools                                                      📋
 ceph osd pool ls
 ceph osd pool get noautoscale
 ceph osd pool get-quota volumes
@@ -512,7 +513,7 @@ ceph osd pool set ...
 # Placement Groups
 ![bg right:30% 50%](assets/pics/ceph/icon-ceph.svg)
 ```bash
-                                                                            📋
+# Review placement groups                                                   📋
 ceph pg ls
 ceph pg ls-by-pool vms
 ceph pg dump
@@ -732,7 +733,7 @@ mc cat s3/demo-bucket/project1/test.txt
 
 ---
 # Operations
-## Update system packages and reboot
+### **Update system packages and reboot**
 ![bg right:55% 25%](assets/pics/ceph/icon-ceph.svg)
 
 
@@ -752,7 +753,7 @@ ceph pg dump_stuck unclean
 
 ceph osd set noout
 
-# Upgrade and reboot
+# Update and reboot
 
 # On cephosd03, start ceph services
 systemctl start  ceph.target
@@ -769,7 +770,7 @@ ceph osd unset noout
 
 ---
 # Operations
-## Update system packages and reboot
+### **Update system packages and reboot**
 ![bg right:55% 25%](assets/pics/ceph/icon-ceph.svg)
 
 
@@ -786,11 +787,9 @@ ceph status
 
 ---
 # Operations
-## Upgrade
-![bg right:55% 25%](assets/pics/ceph/icon-ceph.svg)
-[Review first](https://infraguide.org/cheat-sheets/ceph/#pre-upgrade-backups--checks)
-
-
+### **Upgrade**
+![bg right:60% 25%](assets/pics/ceph/icon-ceph.svg)
+[Cheat sheet to check](https://infraguide.org/cheat-sheets/ceph/#pre-upgrade-backups--checks)
 ```bash
 # Upgrade ceph cluster                                                      📋
 VERSION="19.2.3"
@@ -914,7 +913,9 @@ ceph orch ls osd
 ceph osd tree
 
 ceph orch osd rm --zap <OSD_NR> --force
-ceph osd purge <OSD_NR> --yes-i-really-mean-it
+
+# use with caution if you need to force
+# ceph osd purge <OSD_NR> --yes-i-really-mean-it
 
 ceph orch osd rm status
 ceph status
@@ -1015,29 +1016,64 @@ ceph osd unset norecover
 # Add an OSD Node
 ![bg right:30% 50%](assets/pics/ceph/icon-ceph.svg)
 ```bash
+# From deployment node as deploy user, prepare the new osd host             📋
+sudo cp /home/deploy/.ssh/authorized_keys /root/.ssh/authorized_keys
+ssh-copy-id -f -i /etc/ceph/id_rsa root@cephosd04.mgmt
 
+# Add cephosd04 host to spec
+vim $SPEC
+
+# List the known hosts in cluster
+sudo ceph orch host ls
+
+# apply the spec
+sudo ceph orch apply -i $CEPH_SPEC
+
+# Watch
+sudo ceph orch host ls
+sudo ceph -s
 ```
 
 ---
 # Remove an OSD Node
 ![bg right:30% 50%](assets/pics/ceph/icon-ceph.svg)
 ```bash
+# Start maintenance for the host                                            📋
+ceph orch host maintenance enter cephosd04  --force --yes-i-really-mean-it
 
+# Drain/Remove
+ceph orch host drain  cephosd04
+ceph orch host rm     cephosd04 [--force]
+
+# Help if needed
+# ceph orch osd  rm --zap <OSD_NR> --force
+# use with caution if you need to force
+# ceph osd purge <OSD_NR> --yes-i-really-mean-it
+
+ceph status
+
+# Remove the host from the crush map
+ceph osd tree
+ceph osd crush remove cephosd04
 ```
 
 ---
 # Modify and activate a spec
 ![bg right:30% 50%](assets/pics/ceph/icon-ceph.svg)
 ```bash
+# modify the spec                                                           📋
+vim $SPEC
 
+# apply
+sudo ceph orch apply -i $CEPH_SPEC
 ```
 
 ---
-# Failure Domain
-[//]: # (FIXME:)
+# Modify crush map
+### **Failure Domain**
 ![bg right:30% 50%](assets/pics/ceph/icon-ceph.svg)
 ```bash
-# Bucket types
+# Bucket types                                                              📋
 ceph osd crush dump  | jq .types
 
 # Create racks
@@ -1048,7 +1084,7 @@ ceph osd crush add-bucket rack-03 rack
 # Move the racks under the root
 ceph osd crush move rack-01 root=default
 ceph osd crush move rack-02 root=default
-ceph osd crush move rack-02 root=default
+ceph osd crush move rack-03 root=default
 
 # Move the hosts into the racks
 ceph osd crush move cephosd01 rack=rack-01
@@ -1067,10 +1103,10 @@ ceph osd pool set <POOL> crush_rule replicated_rack_rule
 # Benchmarking
 ![bg right:30% 50%](assets/pics/ceph/icon-ceph.svg)
 
-[//]: # (FIXME:)
+[//]: # (FIXME: test )
 
 ```bash
-# Benchmark a specific OSD
+# Benchmark a specific OSD                                                  📋
 ceph tell osd.2 bench
 ceph --format plain tell osd.0 bench
 # Benchmark all OSDs
@@ -1088,22 +1124,21 @@ ceph tell mon.\* injectargs '--mon-allow-pool-delete=true'
 ceph osd pool delete benchmark benchmark --yes-i-really-really-mean-it
 
 # Benchmark on a newly created volume + cleanup
-rbd create  --size 1024 test/benchmark
-rbd bench-write test/benchmark --io-size 1048576  --io-threads 16 --io-pattern rand
-rbd rm  test/benchmark
+rbd create  --size 1024 benchmark/test
+rbd bench-write benchmark/test --io-size 1048576  --io-threads 16 --io-pattern rand
+rbd rm  benchmark/test
 
 # Benchmark on a newly created volume + cleanup
-rbd create  --size 1024 test/benchmark
-fio --size=100M --ioengine=rbd --invalidate=0 --direct=1 --numjobs=10 --rw=write --name=fiojob --blocksize_range=4K-512k --iodepth=1 --pool=test --rbdname=benchmark
-rbd rm  test/benchmark
-
+rbd create  --size 32 benchmark/test
+fio --size=100M --ioengine=rbd --invalidate=0 --direct=1 --numjobs=10 --rw=write --name=fiojob --blocksize_range=4K-512k --iodepth=1 --pool=benchmark --rbdname=test
+rbd rm  benchmark/test
 ```
 
 ---
 # Performance tests
 ![bg right:45% 30%](assets/pics/ceph/icon-ceph.svg)
 ### **Simple - Standard tests with dd**
-```bash
+```bash                                                                     📋
 # Big file
 dd if=/dev/random of=./testfile bs=1G count=1 oflag=direct
 # Many small files
@@ -1117,7 +1152,7 @@ dd if=/dev/zero of=./testfile bs=512 count=1000 oflag=dsync
 ### **Sequential Throughput (1MB)**
 *Simulates: Large file transfers, VM migrations, backups.*
 ```bash
-# dd if=/dev/zero of=testfile bs=1M count=2048 oflag=direct
+# dd if=/dev/zero of=testfile bs=1M count=2048 oflag=direct                 📋
 fio                  \
 --name=baseline_seq  \
 --ioengine=libaio    \
@@ -1137,7 +1172,7 @@ fio                  \
 ### **Random IOPS (4KB)**
 *Simulates: General OS responsiveness and small metadata operations.*
 ```bash
-# dd if=testfile of=/dev/null bs=4k count=262144 iflag=direct
+# dd if=testfile of=/dev/null bs=4k count=262144 iflag=direct               📋
 fio                  \
 --name=baseline_iops \
 --ioengine=libaio    \
@@ -1158,6 +1193,7 @@ fio                  \
 ![bg right:50% 30%](assets/pics/ceph/icon-ceph.svg)
 ### **PostgreSQL (8KB Blocks)**
 ```bash
+#                                                                           📋
 fio                \
 --name=db_postgres \
 --ioengine=libaio  \
@@ -1176,6 +1212,7 @@ fio                \
 ![bg right:50% 30%](assets/pics/ceph/icon-ceph.svg)
 ### **MySQL/MariaDB (16KB Blocks)**
 ```bash
+#                                                                           📋
 fio               \
 --name=db_mysql   \
 --ioengine=libaio \
