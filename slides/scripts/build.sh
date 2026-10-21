@@ -28,7 +28,7 @@ out=$(cd "$src" && realpath -m "$(sed -n 's/^output: *//p' .marprc.yml | head -1
 # The sources stay untouched, so the diagram urls only ever live in the built decks.
 work=$(mktemp -d "${TMPDIR:-/tmp}/slides-build-XXXXXXXX")
 if [ -n "${DEBUG:-}" ]; then
-  trap 'echo "build.sh: the build sources stay in $work, remove them with: rm -rf $work" >&2' EXIT
+  trap 'echo "build.sh: the build sources stay in $work , remove them with: rm -rf $work" >&2' EXIT
 else
   trap 'rm -rf "$work"' EXIT
 fi
