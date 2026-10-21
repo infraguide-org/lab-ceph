@@ -9,6 +9,8 @@
 # Usage: build.sh [src-dir] [format...]   (default: src-dir = slides/src, html only)
 # Set MARP to pick the Marp CLI command, e.g. MARP="npx --yes @marp-team/marp-cli@4",
 # and PLANTUML_SERVER to render the diagrams on another PlantUML server.
+# Set DEBUG to keep the sources the decks are built from, to look at the embedded diagrams;
+# the script then also tells how to remove them again.
 set -euo pipefail
 
 scripts=$(dirname "$(realpath "$0")")
@@ -24,8 +26,12 @@ fi
 out=$(cd "$src" && realpath -m "$(sed -n 's/^output: *//p' .marprc.yml | head -1 | sed 's/^"//; s/"$//')")
 
 # The sources stay untouched, so the diagram urls only ever live in the built decks.
-work=$(mktemp -d)
-trap 'rm -rf "$work"' EXIT
+work=$(mktemp -d "${TMPDIR:-/tmp}/slides-build-XXXXXXXX")
+if [ -n "${DEBUG:-}" ]; then
+  trap 'echo "build.sh: the build sources stay in $work, remove them with: rm -rf $work" >&2' EXIT
+else
+  trap 'rm -rf "$work"' EXIT
+fi
 cp -r "$src"/. "$work/"
 sed -i "s|^output:.*|output: \"$out\"|" "$work/.marprc.yml"   # inputDir stays the copy
 

@@ -14,7 +14,13 @@ them. It uses `marp` from `$PATH`, or `npx @marp-team/marp-cli@4` when there is 
 `MARP` to pick another command.
 
 The script builds from a copy of these sources in a temporary directory, so the diagram
-step below never writes into the sources.
+step below never writes into the sources. The copy is removed afterwards, unless the build
+is asked to keep it:
+```bash
+DEBUG=1 ../scripts/build.sh            # keeps the copy and prints the rm to clean it up
+```
+That copy holds the markdown as Marp got it, which is the place to look up the diagram urls
+the build created.
 
 ## PlantUML diagrams
 Marp knows no PlantUML, so `../scripts/plantuml-embed.py` replaces every ```` ```plantuml ````
