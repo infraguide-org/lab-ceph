@@ -4,11 +4,15 @@
 #
 # Builds the decks in the requested formats into the output directory of .marprc.yml
 # and copies assets/ next to them, so the pictures also load in the built html.
+# The decks are built from a copy of the sources in which plantuml-embed.py turns the
+# plantuml code blocks into images of a PlantUML server, so the diagrams render as well.
 # Usage: build.sh [src-dir] [format...]   (default: src-dir = slides/src, html only)
-# Set MARP to pick the Marp CLI command, e.g. MARP="npx --yes @marp-team/marp-cli@4".
+# Set MARP to pick the Marp CLI command, e.g. MARP="npx --yes @marp-team/marp-cli@4",
+# and PLANTUML_SERVER to render the diagrams on another PlantUML server.
 set -euo pipefail
 
-src=$(realpath "${1:-$(dirname "$(realpath "$0")")/../src}")
+scripts=$(dirname "$(realpath "$0")")
+src=$(realpath "${1:-$scripts/../src}")
 shift || true
 formats=("$@")
 [ ${#formats[@]} -eq 0 ] && formats=(html)   # pdf and pptx are slow, so ask for them
@@ -17,9 +21,21 @@ if [ -z "${MARP:-}" ]; then
   MARP=$(command -v marp >/dev/null && echo marp || echo "npx --yes @marp-team/marp-cli@4")
 fi
 
-cd "$src"
-out=$(realpath -m "$(sed -n 's/^output: *//p' .marprc.yml | head -1 | sed 's/^"//; s/"$//')")
+out=$(cd "$src" && realpath -m "$(sed -n 's/^output: *//p' .marprc.yml | head -1 | sed 's/^"//; s/"$//')")
 
+# The sources stay untouched, so the diagram urls only ever live in the built decks.
+work=$(mktemp -d)
+trap 'rm -rf "$work"' EXIT
+cp -r "$src"/. "$work/"
+sed -i "s|^output:.*|output: \"$out\"|" "$work/.marprc.yml"   # inputDir stays the copy
+
+if command -v python3 >/dev/null; then
+  python3 "$scripts/plantuml-embed.py" "${PLANTUML_SERVER:-https://www.plantuml.com/plantuml}" "$work"/*.md
+else
+  echo "build.sh: no python3, the plantuml blocks stay code blocks" >&2
+fi
+
+cd "$work"
 for format in "${formats[@]}"; do
   case $format in
     html) $MARP ;;
@@ -29,6 +45,6 @@ done
 
 # The html keeps the image paths relative to itself, so assets/ has to sit in $out too.
 mkdir -p "$out"
-if [ -d assets ]; then
-  cp -r assets "$out/"
+if [ -d "$src/assets" ]; then
+  cp -r "$src/assets" "$out/"
 fi
