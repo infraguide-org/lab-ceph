@@ -26,8 +26,10 @@ block in the copy with an image that a PlantUML server renders:
 ```
 ````
 `alt`, `width` and `height` are optional and become the alt text and the size of the Marp
-image. The diagram itself travels deflated inside the image url, so the server renders it
-without any access to this repository.
+image. A size in pixels also travels to the server as a `scale` directive, so the server
+already renders the diagram in that size; a percentage only sizes the Marp image. The
+diagram itself travels deflated inside the image url, so the server renders it without any
+access to this repository.
 
 * The default server is https://www.plantuml.com/plantuml; set `PLANTUML_SERVER` to use
   another one, e.g. `PLANTUML_SERVER=http://localhost:8080` for a self-hosted server.

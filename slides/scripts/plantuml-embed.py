@@ -5,8 +5,10 @@
 # PlantUML server renders, because Marp itself does not know PlantUML. The diagram is
 # deflated into the image url, so the server needs no access to the sources.
 # Usage: plantuml-embed.py <server-url> <file.md>...
-# A block may carry alt="..." width="..." height="...", which become the alt text and the
-# size keywords of the Marp image, e.g. ```plantuml alt="Overview" width="700px"
+# A block may carry alt="..." width="..." height="...", e.g.
+# ```plantuml alt="Overview" width="700px". They become the alt text and the size keywords
+# of the Marp image, and the size also goes to the server as a scale directive, so the svg
+# arrives in the wanted size no matter how the renderer handles the keywords.
 import re
 import sys
 import zlib
@@ -29,11 +31,26 @@ def encode(diagram):
     return url
 
 
+def scale(attributes):
+    """Turn width/height into the PlantUML scale directive that sizes the rendered svg."""
+    sizes = {name: attributes.get(name, "").removesuffix("px") for name in ("width", "height")}
+    sizes = {name: value for name, value in sizes.items() if value.isdigit()}
+    if len(sizes) == 2:
+        return "scale %s*%s" % (sizes["width"], sizes["height"])   # fit into the box
+    for name, value in sizes.items():
+        return "scale %s %s" % (value, name)
+    return ""   # no size, or one in units the server does not take, e.g. a percentage
+
+
 def image(server, options, diagram):
     """Build the Marp image tag that points to the diagram on the PlantUML server."""
     attributes = dict(re.findall(r'([a-z]+)="([^"]*)"', options))
     if not diagram.lstrip().startswith("@start"):
         diagram = "@startuml\n%s\n@enduml" % diagram
+    directive = scale(attributes)
+    if directive:   # right behind @startuml, where the server expects its directives
+        diagram = re.sub(r"@start\w+[^\n]*\n", lambda start: start[0] + directive + "\n",
+                         diagram, count=1)
     keywords = ["%s:%s" % (short, attributes[name])
                 for name, short in (("width", "w"), ("height", "h")) if name in attributes]
     keywords.append(attributes.get("alt", "PlantUML diagram"))
