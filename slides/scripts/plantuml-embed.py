@@ -9,12 +9,13 @@
 # ```plantuml alt="Overview" width="700px". They become the alt text and the size keywords
 # of the Marp image, and the size also goes to the server as a scale directive, so the svg
 # arrives in the wanted size no matter how the renderer handles the keywords.
+# Blocks inside a longer fence stay as they are, so documentation can show the syntax.
 import re
 import sys
 import zlib
 
 ALPHABET = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz-_"
-BLOCK = re.compile(r"^```plantuml[ \t]*([^\n]*)\n(.*?)\n?^```[ \t]*$", re.DOTALL | re.MULTILINE)
+FENCE = re.compile(r"^(`{3,})[ \t]*(\S*)[ \t]*([^\n]*?)[ \t]*$")
 
 
 def encode(diagram):
@@ -57,18 +58,47 @@ def image(server, options, diagram):
     return "![%s](%s/svg/%s)" % (" ".join(keywords), server, encode(diagram))
 
 
+def embed(server, text):
+    """Replace the plantuml blocks of the markdown, those of an enclosing block excluded."""
+    markdown, fence, block = [], "", None
+    for line in text.split("\n"):
+        marker = FENCE.match(line)
+        if not fence:                                    # outside of any code block
+            if marker:
+                fence = marker[1]
+                if marker[2] == "plantuml":
+                    block = [line, marker[3]]            # the opening line and its options
+                    continue
+            markdown.append(line)
+        elif marker and len(marker[1]) >= len(fence) and not marker[2] and not marker[3]:
+            if block:                                    # the plantuml block is complete
+                markdown.append(image(server, block[1], "\n".join(block[2:])))
+                block = None
+            else:
+                markdown.append(line)
+            fence = ""
+        elif block:
+            block.append(line)
+        else:
+            markdown.append(line)
+    if block:                                            # no closing fence, keep the block
+        markdown += [block[0]] + block[2:]
+    return "\n".join(markdown)
+
+
 def main(server, paths):
     for path in paths:
         with open(path, encoding="utf-8") as markdown:
             text = markdown.read()
-        embedded = BLOCK.sub(lambda block: image(server, block[1], block[2]), text)
+        embedded = embed(server, text)
         if embedded != text:
             with open(path, "w", encoding="utf-8") as markdown:
                 markdown.write(embedded)
-            print("plantuml-embed: %s diagram(s) in %s" % (len(BLOCK.findall(text)), path))
+            print("plantuml-embed: %s diagram(s) in %s"
+                  % (embedded.count("/svg/") - text.count("/svg/"), path))
 
 
 if __name__ == "__main__":
     if len(sys.argv) < 3:
-        sys.exit(__doc__ or "usage: plantuml-embed.py <server-url> <file.md>...")
+        sys.exit("usage: plantuml-embed.py <server-url> <file.md>...")
     main(sys.argv[1].rstrip("/"), sys.argv[2:])
