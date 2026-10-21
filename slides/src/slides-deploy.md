@@ -146,6 +146,35 @@ graph LR
 </div>
 
 ---
+# Infrastructure
+```plantuml alt="Infrastructure overview" width="700px"
+!include <edgy/edgy>
+
+cloud "Internet" as internet
+
+$architectureFacet("Infrastructure", infrastructure) {
+  $object("Registry\n(Harbor)", registry)
+  $object("DNS\n(dnsmasq)", dns)
+  $object("Proxy\n(squid)", proxy)
+  $object("Recorder\n(ansible/ara)", recorder)
+}
+
+$architectureFacet("Environment", environment) {
+  $activity("OpenStack", os)
+  $activity("Deployment", deploy)
+}
+
+$flowUp(dns, internet)
+$flowUp(registry, internet)
+$flowUp(proxy, internet)
+$flowUp(os, registry)
+$flowUp(os, dns)
+$flowUp(deploy, proxy)
+$flowUp(deploy, dns)
+$flowUp(deploy, recorder)
+```
+
+---
 # Deployment Node
 * Python virtual envs
 * cephadm
