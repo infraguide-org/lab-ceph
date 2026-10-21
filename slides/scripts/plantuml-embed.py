@@ -5,10 +5,13 @@
 # PlantUML server renders, because Marp itself does not know PlantUML. The diagram is
 # deflated into the image url, so the server needs no access to the sources.
 # Usage: plantuml-embed.py <server-url> <file.md>...
-# A block may carry alt="..." width="..." height="...", e.g.
-# ```plantuml alt="Overview" width="700px". They become the alt text and the size keywords
-# of the Marp image, and the size also goes to the server as a scale directive, so the svg
-# arrives in the wanted size no matter how the renderer handles the keywords.
+# A block may carry these options, all optional:
+#   renderer_hint="![bg right:30% 90%]"   the image tag to put the url in, taken as it is,
+#                                 so every image syntax of the renderer works
+#   alt="Overview"                the alt text, when the block brings no renderer hint
+#   width="700px" height="..."    the size, as image keywords and as a scale directive for
+#                                 the server, so the svg already arrives in that size
+# e.g. ```plantuml renderer_hint="![bg right:30% 90%]" width="700px"
 # Blocks inside a longer fence stay as they are, so documentation can show the syntax.
 import re
 import sys
@@ -45,17 +48,20 @@ def scale(attributes):
 
 def image(server, options, diagram):
     """Build the Marp image tag that points to the diagram on the PlantUML server."""
-    attributes = dict(re.findall(r'([a-z]+)="([^"]*)"', options))
+    attributes = dict(re.findall(r'([a-z_]+)="([^"]*)"', options))
     if not diagram.lstrip().startswith("@start"):
         diagram = "@startuml\n%s\n@enduml" % diagram
     directive = scale(attributes)
     if directive:   # right behind @startuml, where the server expects its directives
         diagram = re.sub(r"@start\w+[^\n]*\n", lambda start: start[0] + directive + "\n",
                          diagram, count=1)
-    keywords = ["%s:%s" % (short, attributes[name])
-                for name, short in (("width", "w"), ("height", "h")) if name in attributes]
-    keywords.append(attributes.get("alt", "PlantUML diagram"))
-    return "![%s](%s/svg/%s)" % (" ".join(keywords), server, encode(diagram))
+    if "renderer_hint" in attributes:   # the deck says how to embed, brackets optional
+        tag = attributes["renderer_hint"].strip().removeprefix("![").removesuffix("]")
+    else:
+        keywords = ["%s:%s" % (short, attributes[name])
+                    for name, short in (("width", "w"), ("height", "h")) if name in attributes]
+        tag = " ".join(keywords + [attributes.get("alt", "PlantUML diagram")])
+    return "![%s](%s/svg/%s)" % (tag, server, encode(diagram))
 
 
 def embed(server, text):

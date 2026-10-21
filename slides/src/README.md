@@ -20,16 +20,21 @@ step below never writes into the sources.
 Marp knows no PlantUML, so `../scripts/plantuml-embed.py` replaces every ```` ```plantuml ````
 block in the copy with an image that a PlantUML server renders:
 ````markdown
-```plantuml alt="Infrastructure overview" width="700px"
+```plantuml renderer_hint="![bg right:30% 90%]" width="700px"
 !include <edgy/edgy>
 ...
 ```
 ````
-`alt`, `width` and `height` are optional and become the alt text and the size of the Marp
-image. A size in pixels also travels to the server as a `scale` directive, so the server
-already renders the diagram in that size; a percentage only sizes the Marp image. The
-diagram itself travels deflated inside the image url, so the server renders it without any
-access to this repository.
+The diagram travels deflated inside the image url, so the server renders it without any
+access to this repository. All options of the block are optional:
+
+| Option | Effect |
+| --- | --- |
+| `renderer_hint="![bg right:30% 90%]"` | the image tag the url goes into, taken as it is, so every image syntax of the renderer works; the brackets may be left out |
+| `alt="Overview"` | the alt text, for blocks without a `renderer_hint` |
+| `width="700px"`, `height="400px"` | the size, as Marp keyword and, in pixels, as a `scale` directive for the server, so the diagram already arrives in that size |
+
+A block inside a longer fence, like the example above, stays as it is.
 
 * The default server is https://www.plantuml.com/plantuml; set `PLANTUML_SERVER` to use
   another one, e.g. `PLANTUML_SERVER=http://localhost:8080` for a self-hosted server.
