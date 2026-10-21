@@ -117,37 +117,9 @@ mermaid.initialize({ startOnLoad: true, theme: 'default' });
 
 ---
 # Infrastructure
-<div class="mermaid">
-graph LR
-    internet[Internet <img src="assets/pics/common/icon-cloud.svg" width="60"/>]
-    subgraph Infrastructure
-        direction TB
-        registry("Registry\n(Harbor)")
-        dns("DNS\n(dnsmasq)")
-        proxy("Proxy\n(squid)")
-        recorder("Recorder\n(ansible/ara)")
-    end
-    subgraph Environment
-        direction TB
-        ceph(Ceph)
-        deploy("Deployment")
-    end
-    %% Connections
-    dns --> internet
-    registry --> internet
-    proxy --> internet
-    ceph --> registry
-    ceph --> dns
-    deploy --> proxy
-    deploy --> dns
-    deploy --> recorder
-    %%Environment --> Infrastructure
-    %%registry --> os
-</div>
-
----
-# Infrastructure
-```plantuml alt="Infrastructure overview" width="700px"
+### **Overview**
+```plantuml alt="Infrastructure overview" renderer_hint="![bg right:40% 90%]"
+skinparam backgroundColor transparent
 !include <edgy/edgy>
 
 cloud "Internet" as internet
@@ -156,22 +128,20 @@ $architectureFacet("Infrastructure", infrastructure) {
   $object("Registry\n(Harbor)", registry)
   $object("DNS\n(dnsmasq)", dns)
   $object("Proxy\n(squid)", proxy)
-  $object("Recorder\n(ansible/ara)", recorder)
 }
 
-$architectureFacet("Environment", environment) {
-  $activity("OpenStack", os)
-  $activity("Deployment", deploy)
+$productFacet("Environment", environment) {
+  $organisationFacet("Ceph", ceph)
+  $object("Deployment", deploy)
 }
 
 $flowUp(dns, internet)
 $flowUp(registry, internet)
 $flowUp(proxy, internet)
-$flowUp(os, registry)
-$flowUp(os, dns)
+$flowUp(ceph, registry)
+$flowUp(ceph, dns)
 $flowUp(deploy, proxy)
 $flowUp(deploy, dns)
-$flowUp(deploy, recorder)
 ```
 
 ---
