@@ -218,8 +218,9 @@ sudo docker ps
 sudo ceph orch host ls
 
 # Review $CEPH_SPEC file and apply
-
 sudo ceph orch apply -i $CEPH_SPEC
+
+sudo chown deploy:deploy -R /etc/ceph/
 ```
 
 [//]: # (---)
@@ -644,6 +645,11 @@ cp /mnt/project1/.snap/snapshot_backup_v1/document.txt /mnt/project1/document.tx
 rmdir  /mnt/project1/.snap/snapshot_backup_v1
 ```
 
+[//]: # (---)
+[//]: # (# TODO)
+[//]: # (# CephFS Subvolumes)
+[//]: # ( ![bg right:30% 50%]\(assets/pics/ceph/icon-ceph.svg\) )
+
 ---
 # RadosGW / S3
 ![bg right:30% 50%](assets/pics/ceph/icon-ceph.svg)
@@ -732,6 +738,24 @@ mc cat s3/demo-bucket/project1/test.txt
 
 ---
 # Operations
+### ** Make the cluster alive*
+![bg right:55% 25%](assets/pics/ceph/icon-ceph.svg)
+```bash
+ceph osd pool create benchmark
+
+rbd create  --size 10G benchmark/test
+rbd config image set   benchmark/test rbd_qos_bps_limit 1048576 # 1 MiB/s
+
+# start the benchmark process
+rbd bench --io-type write --io-pattern rand --io-size 4K --io-threads 4 --io-total 1T benchmark/test
+
+# to remove the limit excute
+rbd config image remove benchmark/test rbd_qos_bps_limit
+
+```
+
+---
+# Operations
 ### **Update system packages and reboot**
 ![bg right:55% 25%](assets/pics/ceph/icon-ceph.svg)
 
@@ -767,6 +791,30 @@ ceph pg dump_stuck
 ceph osd unset noout
 ```
 
+
+---
+# Operations
+### **Add an OSD Node**
+![bg right:30% 50%](assets/pics/ceph/icon-ceph.svg)
+```bash
+# From deployment node as deploy user, prepare the new osd host             📋
+ssh  <OSD_NODE> 'sudo cp /home/deploy/.ssh/authorized_keys /root/.ssh/authorized_keys'
+ssh-copy-id -f -i /etc/ceph/id_rsa root@<OSD_NODE>
+
+# Add cephosd04 host to spec
+vim $SPEC
+
+# List the known hosts in cluster
+sudo ceph orch host ls
+
+# apply the spec
+sudo ceph orch apply -i $CEPH_SPEC
+
+# Watch
+sudo ceph orch host ls
+sudo ceph -s
+```
+
 ---
 # Operations
 ### **Update system packages and reboot**
@@ -775,11 +823,11 @@ ceph osd unset noout
 
 ```bash
 # The same with ceph orch
-ceph orch host maintenance enter cephosd03  --force --yes-i-really-mean-it
+ceph orch host maintenance enter <OSD_NODE>  --force --yes-i-really-mean-it
 
 # Upgrade and reboot the host
 
-ceph orch host maintenance exit cephosd03
+ceph orch host maintenance exit <OSD_NODE>
 
 ceph status
 ```
@@ -789,6 +837,12 @@ ceph status
 ### **Upgrade**
 ![bg right:60% 25%](assets/pics/ceph/icon-ceph.svg)
 [Cheat sheet to check](https://infraguide.org/cheat-sheets/ceph/#pre-upgrade-backups--checks)
+
+
+---
+# Operations
+### **Upgrade**
+![bg right:60% 25%](assets/pics/ceph/icon-ceph.svg)
 ```bash
 # Upgrade ceph cluster                                                      📋
 VERSION="19.2.3"
@@ -846,9 +900,8 @@ apt install -y cephadm-<VERSION> ceph-common-<VERSION>
 ```
 
 ---
-# Replace a Mon Node
-[//]: # (FIXME: test)
-
+# Operations
+### **Replace a Mon Node**
 ![bg right:50% 30%](assets/pics/ceph/icon-ceph.svg)
 ```bash
 # 🚧 on deployment node remove cephmon03 from the cluster                   📋
@@ -882,17 +935,15 @@ ceph orch ps
 ```
 
 ---
-# Replace an OSD
+# Operations
+### **Replace an OSD**
 ![bg right:50% 30%](assets/pics/ceph/icon-ceph.svg)
-
-[//]: # (FIXME: test)
-
 ```bash
 # List all the OSDs in the cluster, take the last one, check the devices behind 📋
 ceph osd tree
 ceph osd metadata <OSD_NR> | grep device
 
-# 💥 Let's break it, on cephosd03
+# 💥 Let's break it, on <OSD_NODE>
 dd if=/dev/zero of=<DEVICE> bs=1024 count=$((1024*10))
 
 # 🩺 check status
@@ -927,7 +978,8 @@ lsblk
 ```
 
 ---
-# Replace an OSD
+# Operations
+### **Replace an OSD**
 ![bg right:50% 30%](assets/pics/ceph/icon-ceph.svg)
 
 ```bash
@@ -956,8 +1008,9 @@ ceph osd unset norecover
 ```
 
 ---
-# Replace an OSD
-## **Workarounds**
+# Operations
+### **Replace an OSD**
+### **Workarounds**
 ![bg right:50% 30%](assets/pics/ceph/icon-ceph.svg)
 
 ```bash
@@ -978,12 +1031,70 @@ wipefs --all --force <DEVICE>
 
 
 ---
-# Rebuild an OSD Node
+# Operations
+### **Repair a broken OSD Node**
+![bg right:50% 30%](assets/pics/ceph/icon-ceph.svg)
+
+```bash
+# 🚧 on the broken osd node clean up
+systemctl stop ceph.target
+
+systemctl list-units | grep ceph
+rm -rf  /etc/ceph/ /var/lib/ceph/* /var/log/ceph/* /etc/systemd/system/ceph*
+systemctl daemon-reload
+docker image ls | awk '{print $3}' | xargs docker rmi
+reboot
+# After reboot continue
+dmsetup ls
+dmsetup ls | awk '{print $1}'| xargs -I{} sh -c 'echo Removing {}; dmsetup remove {};'
+
+# 🛠️ Clean up device
+pvs
+pvs --noheadings | awk '{print $1}'| xargs -I{} sh -c 'echo Cleaning {}; wipefs --all --force {};'
+pvs
+
+# 🛠️ on the deployment node clean up
+ceph orch host maintenance enter <OSD_NODE>  --force --yes-i-really-mean-it
+ceph orch host ls
+ceph osd tree
+ceph orch host drain <OSD_NODE>
+ceph orch host rm    <OSD_NODE> --force
+
+# 🛠️ remove old OSDs, when still present
+ceph orch host ls
+ceph osd purge <OSD_NR> --yes-i-really-mean-it
+ceph osd purge <OSD_NR> --yes-i-really-mean-it
+ceph osd purge <OSD_NR> --yes-i-really-mean-it
+
+ceph osd crush remove <OSD_NODE>
+
+# 🩺 check before reguidling
+ceph orch host ls
+ceph osd tree
+
+ceph orch apply -i /home/deploy/ceph/spec.yaml
+
+# 🩺 check for problems on the osd node
+tail -f /var/log/ceph/cephadm.log
+
+# deployment deplyment node, check status
+ceph -s
+ceph orch host ls
+ceph osd tree
+```
+
+---
+# Operations
+### **Rebuild an OSD Node**
 ![bg right:50% 30%](assets/pics/ceph/icon-ceph.svg)
 ```bash
 # Prepare the rebuild                                                       📋
 ceph osd set noout
 ceph osd set norecover
+
+# 🩺 check if OSDs can be stopped
+ceph osd tree
+ceph osd ok-to-stop <OSD_NR> <OSD_NR> <OSD_NR> | jq . |  head -n 25
 
 # 🚧 Drain the Ceph OSD host
 ceph orch host drain <hostname> [--zap-osd-devices]
@@ -1012,29 +1123,8 @@ ceph osd unset norecover
 ```
 
 ---
-# Add an OSD Node
-![bg right:30% 50%](assets/pics/ceph/icon-ceph.svg)
-```bash
-# From deployment node as deploy user, prepare the new osd host             📋
-sudo cp /home/deploy/.ssh/authorized_keys /root/.ssh/authorized_keys
-ssh-copy-id -f -i /etc/ceph/id_rsa root@cephosd04.mgmt
-
-# Add cephosd04 host to spec
-vim $SPEC
-
-# List the known hosts in cluster
-sudo ceph orch host ls
-
-# apply the spec
-sudo ceph orch apply -i $CEPH_SPEC
-
-# Watch
-sudo ceph orch host ls
-sudo ceph -s
-```
-
----
-# Remove an OSD Node
+# Operations
+### **Remove an OSD Node**
 ![bg right:30% 50%](assets/pics/ceph/icon-ceph.svg)
 ```bash
 # Start maintenance for the host                                            📋
@@ -1068,7 +1158,8 @@ sudo ceph orch apply -i $CEPH_SPEC
 ```
 
 ---
-# Modify crush map
+# Operations
+### **Modify crush map**
 ### **Failure Domain**
 ![bg right:30% 50%](assets/pics/ceph/icon-ceph.svg)
 ```bash
