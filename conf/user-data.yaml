@@ -13,6 +13,9 @@ write_files:
 
       [Service]
       Type=oneshot
+      # network-online.target can be reached before the DHCP lease brings the DNS server,
+      # so wait up to 5 minutes until nfgd.net resolves
+      ExecStartPre=/bin/bash -c 'for i in {1..60}; do getent hosts nfgd.net > /dev/null && exit 0; sleep 5; done; echo "nfgd.net does not resolve after 5 minutes" >&2; exit 1'
       ExecStart=/bin/bash -c '\
         set -euo pipefail; \
         source /etc/profile.d/60-lab.sh;                                                      \
