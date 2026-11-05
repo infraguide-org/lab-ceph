@@ -1,7 +1,7 @@
 # Source: https://github.com/infraguide-org/lab-ceph
 # Copyright (c) 2026 infraguide.org, MIT License
 ---
-session_name: stack
+session_name: lab-ceph
 windows:
   - window_name: ceph
     layout: tiled
