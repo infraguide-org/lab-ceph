@@ -11,8 +11,10 @@ set -euo pipefail
 NFGD_HOME="/infraguide/setup-sandbox"
 REPO="infraguide-org/lab-ceph"
 REF="main"
-DIR="conf"
-DEST="$DIR"
+CONF_DIR="conf"
+CONF_DEST="$CONF_DIR"
+TESTS_DIR="tests"
+TESTS_DEST="$TESTS_DIR"
 
 # the directory should be already created by nfgd.net/setup/sandbox script
 cd "$NFGD_HOME"
@@ -26,18 +28,22 @@ trap 'rm -rf "$tmp"' EXIT
 curl -fsSL "https://codeload.github.com/${REPO}/tar.gz/${REF}" \
   | tar -xz -C "$tmp" --strip-components=1
 
-if [ ! -d "${tmp}/${DIR}" ]
+if [ ! -d "${tmp}/${CONF_DIR}" ]
 then
-  echo "Directory '${DIR}' not found in ${REPO}@${REF}" >&2
+  echo "Directory '${CONF_DIR}' not found in ${REPO}@${REF}" >&2
   exit 1
 fi
 
-mkdir -p "$DEST"
-cp -a "${tmp}/${DIR}"/* "$DEST"/
+mkdir -p "$CONF_DEST"
+cp -a "${tmp}/${CONF_DIR}"/* "$CONF_DEST"/
 
-# lab specific tests, the runner looks there before the generic ones in tests/
-rm -rf lab/tests && mkdir -p lab
-if [ -d "${tmp}/tests" ]; then cp -a "${tmp}/tests" lab/; fi
+# lab specific tests are optional, they complete the common ones in tests/
+# and replace those with the same name
+if [ -d "${tmp}/${TESTS_DIR}" ]
+then
+  mkdir -p "$TESTS_DEST"
+  cp -a "${tmp}/${TESTS_DIR}"/* "$TESTS_DEST"/
+fi
 
 ##############################################################################
 # ssh config
