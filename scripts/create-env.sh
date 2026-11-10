@@ -35,6 +35,10 @@ fi
 mkdir -p "$DEST"
 cp -a "${tmp}/${DIR}"/* "$DEST"/
 
+# lab specific tests, the runner looks there before the generic ones in tests/
+rm -rf lab/tests && mkdir -p lab
+if [ -d "${tmp}/tests" ]; then cp -a "${tmp}/tests" lab/; fi
+
 ##############################################################################
 # ssh config
 # a second run (e.g. after a failed boot) does not add the entries twice
