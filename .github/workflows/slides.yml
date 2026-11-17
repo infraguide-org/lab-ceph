@@ -10,6 +10,7 @@ on:
       - "slides/scripts/**"
       - "status/**"
       - "conf/env.yaml"
+      - "conf/net-diagram.yaml"
       - ".github/workflows/slides.yml"
   workflow_dispatch:
 
@@ -29,13 +30,22 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Checkout setup-sandbox
+        uses: actions/checkout@v4
+        with:
+          repository: infraguide-org/setup-sandbox
+          path: .setup-sandbox
+
+      - name: Render network diagrams
+        run: .setup-sandbox/scripts/draw/net-diagrams.sh conf/env.yaml conf/net-diagram.yaml "slides/src/assets/${GITHUB_REPOSITORY#*/lab-}"
+
       - name: Build html, pdf and pptx
         env:
           MARP: npx --yes @marp-team/marp-cli@4
         run: slides/scripts/build.sh slides/src html pdf pptx
 
       - name: Create index.json and index.html
-        run: slides/scripts/make-index.sh "${GITHUB_REPOSITORY#*/lab-}" slides/src slides/dist status/build.yml conf/env.yaml
+        run: slides/scripts/make-index.sh "${GITHUB_REPOSITORY#*/lab-}" slides/src slides/dist status/build.yml conf/env.yaml conf/net-diagram.yaml
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v4
