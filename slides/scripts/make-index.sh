@@ -4,17 +4,20 @@
 #
 # Writes index.json (machine-readable list of decks and files) and index.html
 # (download page) into the built slides directory.
-# Usage: make-index.sh <lab> <src-dir> <dist-dir> [build-yml] [env-yaml]
+# Usage: make-index.sh <lab> <src-dir> <dist-dir> [build-yml] [env-yaml] [net-diagram-yaml]
 # The optional build.yml (status/build.yml) adds a Build section to index.html,
 # the optional env.yaml (conf/env.yaml) adds a Hosts section and a hosts object in index.json.
 # An environment diagram at assets/<lab>/env.svg adds an Environment section and a diagram
-# entry (its path) in index.json.
+# entry (its path) in index.json. The optional net-diagram.yaml (conf/net-diagram.yaml) adds,
+# for every network with a focus diagram at assets/<lab>/env-<id>.svg, a link to it and a
+# focus_diagrams entry (id, label, path) in index.json.
 set -euo pipefail
 
 lab=$1
 src=$(realpath "$2")
 build=$([ -f "${4:-}" ] && realpath "$4" || true)
 env=$([ -f "${5:-}" ] && realpath "$5" || true)
+layout=$([ -f "${6:-}" ] && realpath "$6" || true)
 cd "$3"
 
 rm -f README.*
@@ -36,6 +39,18 @@ files=$(find . -type f ! -name 'index.*' | sed 's#^\./##' | sort | jq -R -s -c '
 
 diagram=""
 [ -f "assets/$lab/env.svg" ] && diagram="assets/$lab/env.svg"
+
+focus='[]'
+if [ -n "$diagram" ] && [ -n "$layout" ]; then
+  focus=$(python3 - "$layout" "assets/$lab" <<'PY'
+import json, os, sys, yaml
+
+nets = yaml.safe_load(open(sys.argv[1]))["networks"]
+paths = [(n, f"{sys.argv[2]}/env-{n['id']}.svg") for n in nets]
+json.dump([{"id": n["id"], "label": n["label"], "path": p} for n, p in paths if os.path.isfile(p)], sys.stdout)
+PY
+)
+fi
 
 hosts=null
 if [ -n "$env" ]; then
@@ -65,8 +80,8 @@ PY
 )
 fi
 
-jq -n --arg lab "$lab" --argjson decks "$(jq -c 'sort_by(.order)' <<<"$decks")" --argjson files "$files" --argjson hosts "$hosts" --arg diagram "$diagram" \
-  '{schema: 1, lab: $lab, decks: $decks, files: $files} + (if $diagram != "" then {diagram: $diagram} else {} end) + (if $hosts then {hosts: $hosts} else {} end)' > index.json
+jq -n --arg lab "$lab" --argjson decks "$(jq -c 'sort_by(.order)' <<<"$decks")" --argjson files "$files" --argjson hosts "$hosts" --arg diagram "$diagram" --argjson focus "$focus" \
+  '{schema: 1, lab: $lab, decks: $decks, files: $files} + (if $diagram != "" then {diagram: $diagram} else {} end) + (if $focus != [] then {focus_diagrams: $focus} else {} end) + (if $hosts then {hosts: $hosts} else {} end)' > index.json
 
 {
   cat <<HTML
@@ -112,6 +127,7 @@ HTML
   if [ -n "$diagram" ]; then
     echo '<h2>Environment</h2>'
     echo "<img class=\"diagram\" src=\"$diagram\" alt=\"Lab environment diagram\">"
+    jq -r '.focus_diagrams // [] | select(length > 0) | map("<a href=\"\(.path | @html)\">\(.label | @html)</a>") | "<p>Per network: \(join(" · "))</p>"' index.json
   fi
   if [ -n "$env" ]; then
     echo '<h2>Hosts</h2>'
