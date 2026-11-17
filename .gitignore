@@ -3,3 +3,6 @@
 slides/dist/
 *.swp
 *.swo
+# rendered by setup-sandbox/scripts/draw/net-diagrams.sh in the slides workflow
+slides/src/assets/*/env.svg
+slides/src/assets/*/env-*.svg

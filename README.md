@@ -8,14 +8,23 @@ Lab description: [infraguide.org/learn/ceph](https://infraguide.org/learn/ceph/)
 ## Repository layout
 | Path | Content |
 |---|---|
-| `conf/` | `env.yaml` - network and host layout of the environment, `tmuxp.yaml` - tmux session with a window per host group |
+| `conf/` | `env.yaml` - network and host layout of the environment, `net-diagram.yaml` - what the network diagrams show, `tmuxp.yaml` - tmux session with a window per host group |
 | `deploy/cephadm/` | cephadm configuration of the Ceph cluster |
 | `modules/` | additional modules, none yet |
 | `slides/` | slide sources (`src`) and the script that builds the index page and `index.json` (`scripts`) |
 | `status/` | `build.yml` - result of the automatic lab build, shown on the lab page |
 
 ## Environment
-![Ceph environment](slides/src/assets/ceph/env.svg)
+Rendered from `conf/env.yaml` and `conf/net-diagram.yaml` by the slides workflow:
+
+![Ceph environment](https://infraguide-org.github.io/lab-ceph/assets/ceph/env.svg)
+
+The scripts that draw the diagrams are in [setup-sandbox](https://github.com/infraguide-org/setup-sandbox) (`scripts/draw`).
+To render the diagrams locally (needs python3 with PyYAML):
+
+```bash
+/infraguide/setup-sandbox/scripts/draw/net-diagrams.sh conf/env.yaml conf/net-diagram.yaml slides/src/assets/ceph
+```
 
 ## Slides
 The slides are published on GitHub Pages: [infraguide-org.github.io/lab-ceph](https://infraguide-org.github.io/lab-ceph/)
@@ -26,7 +35,7 @@ The slides are published on GitHub Pages: [infraguide-org.github.io/lab-ceph](ht
 
 Every deck is available as HTML, PDF and PPTX, for example
 `https://infraguide-org.github.io/lab-ceph/slides-deploy.pdf`.
-[`index.json`](https://infraguide-org.github.io/lab-ceph/index.json) lists the decks in their order, all files, the hosts of the environment (`hosts`) and the path of the environment diagram (`diagram`) in a machine-readable form.
+[`index.json`](https://infraguide-org.github.io/lab-ceph/index.json) lists the decks in their order, all files, the hosts of the environment (`hosts`), the path of the environment diagram (`diagram`) and the diagrams per network (`focus_diagrams`: `id`, `label`, `path`) in a machine-readable form.
 The slides are also part of [infraguide.org](https://infraguide.org/learn/ceph/).
 
 ## Lab page
@@ -37,7 +46,7 @@ The page at [infraguide-org.github.io/lab-ceph](https://infraguide-org.github.io
 | Section | Source | Content |
 |---|---|---|
 | Slides | `slides/src/*.md` | The decks, ordered by the `order` field in their front matter |
-| Environment | `slides/src/assets/ceph/env.svg` | Diagram of the environment, listed as `diagram` in `index.json` |
+| Environment | `conf/env.yaml`, `conf/net-diagram.yaml` | Network diagram `assets/ceph/env.svg`, listed as `diagram` in `index.json`, and one diagram per network in focus mode (`env-<id>.svg`), listed as `focus_diagrams` |
 | Hosts | `conf/env.yaml` (`server_conf`) | Infrastructure and lab hosts with vCPU, RAM, disks and air-gap setting, listed as `hosts` in `index.json` |
 | Build | `status/build.yml` | Result of the automatic lab build |
 
@@ -70,6 +79,6 @@ marp --pdf    # pdf
 marp --pptx   # pptx
 ```
 
-The output goes to `slides/dist`. Every push to `main` that changes `slides/src`, `slides/scripts`, `conf/env.yaml`
+The output goes to `slides/dist`. Every push to `main` that changes `slides/src`, `slides/scripts`, `conf/env.yaml`, `conf/net-diagram.yaml`
 or `status/` builds the slides and the index page and publishes them with the workflow `.github/workflows/slides.yml`.
 The order of the decks is set by the `order` field in the front matter of each deck.
