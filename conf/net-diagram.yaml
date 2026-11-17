@@ -1,0 +1,16 @@
+# Source: https://github.com/infraguide-org/lab-ceph
+# Copyright (c) 2026 infraguide.org, MIT License
+# Layout of the network diagrams, drawn by scripts/draw/net-diagrams.sh of setup-sandbox.
+# Only the networks listed here are drawn (id = key in network_conf of env.yaml).
+# side:  top | bottom   (default: bottom)
+# style: normal | grey  (default: normal)
+networks:
+  - {id: services, label: Services,        color: "#2f9e44", side: top}
+  - {id: storage0, label: Storage Public,  color: "#1971c2"}
+  - {id: storage1, label: Storage Cluster, color: "#9c36b5"}
+# host_groups: hosts = names or patterns from server_conf (order as in env.yaml)
+#   scalable: true -> only the first and the last host of the group, "..." in between
+host_groups:
+  - {name: Monitors, hosts: ["cephmon*"]}
+  - {name: Grafana,  hosts: ["cephgra*"]}
+  - {name: OSDs,     hosts: ["cephosd*"], scalable: true}
